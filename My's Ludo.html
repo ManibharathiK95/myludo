@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<!-- saved from url=(0187)file:///C:/Users/m.bharathi.AL-HAMAD/AppData/Local/Packages/5319275A.WhatsAppDesktop_cv1g1gvanyjgm/LocalState/sessions/72EA510C5D07B3F4F91E22A588A7FE0D48FA561A/transfers/2026-42/MY'S.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My's Ludo</title>
+    <style>
+        :root {
+            --red: #e74c3c; --dark-red: #961414;
+            --green: #2ecc71; --dark-green: #147814;
+            --yellow: #f1c40f; --dark-yellow: #b4b414;
+            --blue: #3498db; --dark-blue: #141496;
+            --bg-dark: #0a0a0a;
+            --panel-dark: #1e1e1e;
+            --board-bg: #111111;
+            --wood-light: #D2B48C; /* Light brown wood */
+        }
+
+        body { background-color: var(--bg-dark); color: #e0e0e0; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+
+        #menu-screen, #game-screen { display: none; flex-direction: column; align-items: center; }
+        #menu-screen.active, #game-screen.active { display: flex; }
+
+        h1 { font-size: 3em; margin-bottom: 40px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); color: #fff; }
+        .menu-btn { background: var(--panel-dark); color: #fff; border: 2px solid #444; padding: 15px 40px; font-size: 1.2em; cursor: pointer; margin: 10px; border-radius: 8px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.4); }
+        .menu-btn:hover { background: #333; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.6); }
+
+        #top-bar {
+            width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .top-btn { 
+            background: var(--panel-dark); color: #fff; border: 2px solid #444; 
+            padding: 10px 25px; font-size: 1em; cursor: pointer; 
+            border-radius: 8px; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.4); 
+        }
+        .top-btn:hover { background: #333; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.6); }
+        .top-btn:disabled { background: #181818; color: #555; cursor: not-allowed; transform: none; box-shadow: none; border-color: #222; }
+
+        /* 2D Board with 3D Looking Textures and Borders (Dark Background) */
+        #board-container { 
+            position: relative; 
+            width: 600px; height: 600px; 
+            background: #1a1a1a; 
+            padding: 15px; 
+            border-radius: 20px; 
+            box-sizing: border-box; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            box-shadow: 
+                0 20px 30px rgba(0,0,0,0.8), 
+                inset 0 0 0 2px #000000,
+                inset 0 0 0 6px #333333,
+                inset 0 0 0 8px #000000; 
+            background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 6px);
+        }
+        #board { 
+            position: relative; 
+            width: 570px; height: 570px; 
+            background: var(--board-bg); 
+            display: grid; 
+            grid-template-columns: repeat(15, 38px); 
+            grid-template-rows: repeat(15, 38px); 
+            border: 4px solid #000; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .cell { width: 38px; height: 38px; box-sizing: border-box; }
+        .cell-path { 
+            background: var(--wood-light); /* Light brown tiles */
+            border: 1px solid #b89970; 
+            box-shadow: inset 1px 1px 0 rgba(255,255,255,0.4), inset -1px -1px 0 rgba(0,0,0,0.2);
+        }
+        .cell-safe { display: flex; justify-content: center; align-items: center; font-size: 1.5em; font-weight: bold; text-shadow: 1px 1px 2px rgba(0,0,0,0.3); }
+        .cell-home-stretch { 
+            border: 1px solid #b89970; 
+            box-shadow: inset 1px 1px 0 rgba(255,255,255,0.4), inset -1px -1px 0 rgba(0,0,0,0.2);
+        }
+        .cell-base { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; padding: 10px; }
+
+        /* Removed blinking animation, made it a static outline */
+        .base-active { 
+            border: 3px solid; 
+            border-radius: 12px; 
+        }
+
+        .coin { width: 26px; height: 26px; position: absolute; z-index: 10; cursor: pointer; filter: drop-shadow(1px 3px 3px rgba(0,0,0,0.8)); transition: transform 0.1s; }
+        .coin:hover { transform: scale(1.3); z-index: 20; }
+
+        /* Stacked layout: Top Bar, Board, Dice */
+        #game-layout { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px; }
+        #ui-panel { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        
+        #dice-area { display: flex; gap: 25px; cursor: pointer; padding: 10px; align-items: center; justify-content: center; }
+        
+        /* Made dice white */
+        .die { 
+            width: 50px; height: 50px; 
+            background: linear-gradient(135deg, #ffffff 0%, #e6e6e6 100%); 
+            border: 2px solid #999; 
+            border-radius: 8px; 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            grid-template-rows: repeat(3, 1fr); 
+            padding: 4px; 
+            box-shadow: inset 0 0 5px #ddd, 0 4px 8px rgba(0,0,0,0.6); 
+            transition: box-shadow 0.3s ease-in-out;
+        }
+
+        /* Dropping Dice Animation */
+        .die.rolling {
+            animation: dropRoll 0.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+        }
+        .die#die2.rolling {
+            animation: dropRoll 0.45s cubic-bezier(0.5, 0, 0.5, 1) infinite reverse;
+        }
+
+        @keyframes dropRoll {
+            0% { transform: translateY(0) rotate(0deg) scale(1); }
+            25% { transform: translateY(-30px) rotate(140deg) scale(0.9); }
+            50% { transform: translateY(10px) rotate(280deg) scale(1.1); }
+            65% { transform: translateY(-15px) rotate(380deg) scale(0.95); }
+            85% { transform: translateY(5px) rotate(480deg) scale(1.05); }
+            100% { transform: translateY(0) rotate(540deg) scale(1); }
+        }
+
+        .dot { width: 10px; height: 10px; background: #333; border-radius: 50%; align-self: center; justify-self: center; box-shadow: inset 0 1px 1px rgba(0,0,0,0.5); }
+        .dot-placeholder { width: 10px; height: 10px; align-self: center; justify-self: center; }
+
+        #win-overlay { position: absolute; top:0; left:0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 100; border-radius: 12px; }
+        #win-text { color: white; font-size: 3em; font-weight: bold; text-shadow: 2px 2px 4px black; text-align: center; margin-bottom: 20px; }
+        .restart-btn { background: #fff; color: black; border: none; padding: 10px 30px; font-size: 1.2em; cursor: pointer; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+<div id="menu-screen" class="active">
+    <h1>My's Ludo</h1>
+    <button class="menu-btn" onclick="startGame(1)">1 Player</button>
+    <button class="menu-btn" onclick="startGame(2)">2 Players</button>
+    <button class="menu-btn" onclick="startGame(3)">3 Players</button>
+    <button class="menu-btn" onclick="startGame(4)">4 Players</button>
+</div>
+
+<div id="game-screen">
+    <div id="game-layout">
+        <div id="top-bar">
+            <button class="top-btn" id="back-btn" onclick="goToMenu()">Menu</button>
+            <button class="top-btn" id="undo-btn" onclick="handleUndo()" disabled="">Undo (1)</button>
+        </div>
+        <div id="board-container">
+            <div id="board"></div>
+            <div id="win-overlay">
+                <div id="win-text"></div>
+                <button class="restart-btn" onclick="location.reload()">Play Again</button>
+            </div>
+        </div>
+        <div id="ui-panel">
+            <div id="dice-area" onclick="handleDiceClick()">
+                <div class="die" id="die1"></div>
+                <div class="die" id="die2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CELL_SIZE = 38;
+    const COLORS = ['red', 'green', 'yellow', 'blue'];
+    // Bright colors for tiles to match the center
+    const BRIGHT_COLORS = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db']; 
+    const DARK_COLORS_MAP = { red: '#961414', green: '#147814', yellow: '#b4b414', blue: '#141496' };
+    
+    const MAIN_TRACK = [
+        [1,6], [2,6], [3,6], [4,6], [5,6], 
+        [6,5], [6,4], [6,3], [6,2], [6,1], [6,0], 
+        [7,0], 
+        [8,0], [8,1], [8,2], [8,3], [8,4], [8,5], 
+        [9,6], [10,6], [11,6], [12,6], [13,6], [14,6], 
+        [14,7], 
+        [14,8], [13,8], [12,8], [11,8], [10,8], [9,8], 
+        [8,9], [8,10], [8,11], [8,12], [8,13], [8,14], 
+        [7,14], 
+        [6,14], [6,13], [6,12], [6,11], [6,10], [6,9], 
+        [5,8], [4,8], [3,8], [2,8], [1,8], [0,8], 
+        [0,7], 
+        [0,6] 
+    ];
+
+    const START_INDICES = [0, 13, 26, 39]; 
+    
+    const SAFE_ZONE_MAP = {};
+    SAFE_ZONE_MAP[MAIN_TRACK[0]] = 0;     // Red
+    SAFE_ZONE_MAP[MAIN_TRACK[13]] = 1;    // Green
+    SAFE_ZONE_MAP[MAIN_TRACK[26]] = 2;    // Yellow
+    SAFE_ZONE_MAP[MAIN_TRACK[39]] = 3;    // Blue    
+
+    const HOME_STRETCHES = [
+        [[1,7],[2,7],[3,7],[4,7],[5,7]],    // Red (Left)
+        [[7,1],[7,2],[7,3],[7,4],[7,5]],    // Green (Top)
+        [[13,7],[12,7],[11,7],[10,7],[9,7]],// Yellow (Right)
+        [[7,13],[7,12],[7,11],[7,10],[7,9]] // Blue (Bottom)
+    ];
+    
+    const HOME_BASES = [[0,0],[9,0],[9,9],[0,9]]; 
+    
+    // Centering finished coins in the middle of their respective triangles
+    const FINISH_CENTERS = [
+        { x: 260, y: 285, cols: 2, rows: 3 }, // Red (Left)
+        { x: 285, y: 260, cols: 3, rows: 2 }, // Green (Top)
+        { x: 310, y: 285, cols: 2, rows: 3 }, // Yellow (Right)
+        { x: 285, y: 310, cols: 3, rows: 2 }  // Blue (Bottom)
+    ];
+
+    const PAWN_SVG = (color) => `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50,5 C35,5 25,20 25,35 C25,50 40,55 45,60 L30,90 L70,90 L55,60 C60,55 75,50 75,35 C75,20 65,5 50,5 Z" fill="var(--${color})" stroke="${DARK_COLORS_MAP[color]}" stroke-width="4"/></svg>`;
+
+    let game = null;
+
+    class Game {
+        constructor(numPlayers) {
+            this.numPlayers = numPlayers;
+            this.players = [];
+            
+            this.isHuman = [false, false, false, false];
+            this.isActive = [false, false, false, false]; 
+            this.hasWon = [false, false, false, false]; // Track winning state
+            this.undosLeft = [1, 1, 1, 1]; // 1 Undo per player per game
+
+            // 1 PLAYER = 1 HUMAN (RED) + 1 AI (YELLOW). 2P = HUMAN RED + HUMAN YELLOW.
+            if(numPlayers === 1) { 
+                this.isActive = [true, false, true, false]; 
+                this.isHuman = [true, false, false, false]; 
+            } else if(numPlayers === 2) { 
+                this.isActive = [true, false, true, false]; 
+                this.isHuman = [true, false, true, false]; 
+            } else if(numPlayers === 3) { 
+                this.isActive = [true, true, true, false]; 
+                this.isHuman = [true, true, true, false]; 
+            } else if(numPlayers === 4) { 
+                this.isActive = [true, true, true, true]; 
+                this.isHuman = [true, true, true, true]; 
+            }
+
+            for(let i=0; i<4; i++) {
+                if(!this.isActive[i]) continue;
+                for(let j=0; j<6; j++) this.players.push({pid: i, cid: j, state: 'HOME', trackPos: -1, stepsTaken: 0});
+            }
+            
+            this.currentPlayer = 0;
+            this.skipInactive(); 
+
+            this.diceResult = 0; this.d1 = -1; this.d2 = -1;
+            this.diceRolled = false; this.extraRoll = false; this.mustPass = false;
+            this.isRolling = false; this.isAnimating = false;
+            this.passTimer = null; this.gameOver = false;
+            this.rollInterval = null;
+            this.endTurnTimer = null;
+            this.autoRollTimer = null;
+            this.undoState = null;
+            this.hasMoved = false; // Lock to prevent clicking multiple coins in one turn
+            
+            this.renderBoard();
+            this.updateUI();
+        }
+
+        // Skip inactive AND won players
+        skipInactive() { 
+            while(!this.isActive[this.currentPlayer] || this.hasWon[this.currentPlayer]) {
+                this.currentPlayer = (this.currentPlayer + 1) % 4;
+            }
+        }
+        
+        getPlayerCoins(pid) { return this.players.filter(c => c.pid === pid); }
+        
+        getValidCoins() {
+            return this.getPlayerCoins(this.currentPlayer).filter(c => {
+                if(c.state === 'HOME' && this.diceResult === 1) return true;
+                if(c.state !== 'HOME' && c.state !== 'FINISHED' && (c.stepsTaken + this.diceResult) <= 57) return true;
+                return false;
+            });
+        }
+
+        startRoll() {
+            if(this.isRolling || this.mustPass || this.gameOver || this.isAnimating) return;
+            if(this.diceRolled && !this.extraRoll) return;
+            this.isRolling = true;
+            if(this.endTurnTimer) clearTimeout(this.endTurnTimer);
+            if(this.autoRollTimer) clearTimeout(this.autoRollTimer);
+            this.undoState = null; // Can't undo after rolling again
+
+            let die1 = document.getElementById('die1');
+            let die2 = document.getElementById('die2');
+            
+            die1.classList.add('rolling');
+            die2.classList.add('rolling');
+
+            let count = 0;
+            this.rollInterval = setInterval(() => {
+                // Pure random for animation so we don't drain the bag
+                this.renderDie('die1', Math.floor(Math.random()*4));
+                this.renderDie('die2', Math.floor(Math.random()*4));
+                count++;
+                if(count > 10) { 
+                    clearInterval(this.rollInterval); 
+                    this.finishRoll(); 
+                }
+            }, 100);
+        }
+
+        finishRoll() {
+            // 100% FAIR UNIFORM DISTRIBUTION RNG
+            // All 7 outcomes (1, 2, 3, 4, 5, 6, 12) have exactly a 1-in-7 (14.28%) chance.
+            // It is completely independent of board state, AI position, or player color.
+            const possibleResults = [1, 2, 3, 4, 5, 6, 12];
+            let total = possibleResults[Math.floor(Math.random() * 7)];
+            
+            // Map the chosen total back to valid visual die faces (0, 1, 2, 3)
+            let pairs = [];
+            if (total === 12) pairs = [[0, 0]];
+            else if (total === 1) pairs = [[0, 1], [1, 0]];
+            else if (total === 2) pairs = [[0, 2], [1, 1], [2, 0]];
+            else if (total === 3) pairs = [[0, 3], [1, 2], [2, 1], [3, 0]];
+            else if (total === 4) pairs = [[1, 3], [2, 2], [3, 1]];
+            else if (total === 5) pairs = [[2, 3], [3, 2]];
+            else if (total === 6) pairs = [[3, 3]];
+            
+            [this.d1, this.d2] = pairs[Math.floor(Math.random() * pairs.length)];
+
+            this.diceResult = total;
+            this.diceRolled = true;
+            this.extraRoll = false;
+            if([1,5,6,12].includes(total)) this.extraRoll = true;
+
+            document.getElementById('die1').classList.remove('rolling');
+            document.getElementById('die2').classList.remove('rolling');
+
+            this.renderDie('die1', this.d1);
+            this.renderDie('die2', this.d2);
+            this.isRolling = false;
+            this.hasMoved = false; // Reset lock on new roll
+            this.checkValidMoves();
+            this.updateUI();
+            
+            if(this.isHuman[this.currentPlayer] && !this.mustPass && !this.gameOver) {
+                let validCoins = this.getValidCoins();
+                if(validCoins.length === 1) {
+                    setTimeout(() => this.moveCoin(validCoins[0]), 500);
+                }
+            } else if(!this.isHuman[this.currentPlayer] && !this.mustPass && !this.gameOver) {
+                setTimeout(() => this.playAI(), 800);
+            }
+        }
+
+        checkValidMoves() {
+            let canMove = this.getValidCoins().length > 0;
+            if(!canMove) { this.mustPass = true; this.passTimer = setTimeout(() => this.endTurn(), 1500); }
+        }
+
+        moveCoin(coin) {
+            if(coin.pid !== this.currentPlayer) return; 
+            if(!this.diceRolled || this.isRolling || this.mustPass || this.gameOver || this.isAnimating || this.hasMoved) return; // Added hasMoved check
+            
+            // Save state for Undo
+            this.undoState = {
+                movedCoin: coin,
+                movedCoinPrevState: { state: coin.state, stepsTaken: coin.stepsTaken, trackPos: coin.trackPos },
+                capturedCoins: [],
+                diceResult: this.diceResult,
+                d1: this.d1,
+                d2: this.d2,
+                diceRolled: this.diceRolled,
+                extraRoll: this.extraRoll
+            };
+
+            if(coin.state === 'HOME' && this.diceResult === 1) {
+                this.isAnimating = true; 
+                this.hasMoved = true; // Lock other coins
+                coin.state = 'ACTIVE'; coin.stepsTaken = 1; coin.trackPos = START_INDICES[coin.pid];
+                this.renderCoins();
+                this.isAnimating = false;
+                this.finalizeMove(coin);
+            } else if(coin.state !== 'HOME' && coin.state !== 'FINISHED') {
+                let stepsToMove = this.diceResult;
+                if(coin.stepsTaken + stepsToMove > 57) return; 
+                this.isAnimating = true;
+                this.hasMoved = true; // Lock other coins
+                this.animateHop(coin, stepsToMove);
+            }
+        }
+
+        animateHop(coin, stepsRemaining) {
+            coin.stepsTaken++;
+            stepsRemaining--;
+
+            if(coin.stepsTaken <= 51) {
+                coin.state = 'ACTIVE';
+                coin.trackPos = (START_INDICES[coin.pid] + coin.stepsTaken - 1) % 52;
+            } else if(coin.stepsTaken <= 56) {
+                coin.state = 'STRETCH';
+            } else if(coin.stepsTaken === 57) {
+                coin.state = 'FINISHED';
+            }
+
+            this.renderCoins();
+
+            if(stepsRemaining > 0 && coin.state !== 'FINISHED') {
+                setTimeout(() => this.animateHop(coin, stepsRemaining), 120); 
+            } else {
+                this.isAnimating = false;
+                this.finalizeMove(coin); 
+            }
+        }
+
+        finalizeMove(coin) {
+            if(coin.state === 'ACTIVE') {
+                let isSafe = START_INDICES.includes(coin.trackPos);
+                if(!isSafe) {
+                    this.players.forEach(oc => {
+                        if(oc.pid !== coin.pid && oc.state === 'ACTIVE' && oc.trackPos === coin.trackPos) {
+                            if(this.undoState) {
+                                this.undoState.capturedCoins.push({
+                                    coin: oc,
+                                    prevState: { state: oc.state, stepsTaken: oc.stepsTaken, trackPos: oc.trackPos }
+                                });
+                            }
+                            oc.state = 'HOME'; oc.trackPos = -1; oc.stepsTaken = 0;
+                        }
+                    });
+                }
+            }
+            this.renderCoins(); 
+            
+            this.checkWinCondition();
+            if(this.gameOver) return;
+
+            if (this.hasWon[this.currentPlayer]) {
+                this.endTurn();
+                return;
+            }
+
+            if (this.isHuman[this.currentPlayer]) {
+                this.endTurnTimer = setTimeout(() => {
+                    this.undoState = null;
+                    if (!this.extraRoll) {
+                        this.endTurn();
+                    } else {
+                        // Prepare for extra roll
+                        this.diceRolled = false; this.diceResult = 0; this.d1 = -1; this.d2 = -1;
+                        this.extraRoll = false;
+                        this.hasMoved = false; // Unlock for next roll
+                        this.renderDie('die1', -1); this.renderDie('die2', -1);
+                        this.updateUI();
+                        // Auto-roll after 4 seconds if human doesn't click
+                        this.autoRollTimer = setTimeout(() => {
+                            if(!this.diceRolled && !this.isRolling && !this.mustPass) this.startRoll();
+                        }, 4000);
+                    }
+                }, 2000);
+            } else {
+                if (this.extraRoll) {
+                    this.diceRolled = false; this.diceResult = 0; this.d1 = -1; this.d2 = -1;
+                    this.extraRoll = false;
+                    this.hasMoved = false; // Unlock for next roll
+                    this.renderDie('die1', -1); this.renderDie('die2', -1);
+                    setTimeout(() => this.playAI(), 800);
+                } else {
+                    this.endTurn();
+                }
+            }
+            this.updateUI();
+        }
+
+        performUndo() {
+            if(!this.undoState || this.undosLeft[this.currentPlayer] <= 0 || !this.isHuman[this.currentPlayer] || this.isAnimating || this.hasWon[this.currentPlayer]) return;
+            
+            if(this.endTurnTimer) clearTimeout(this.endTurnTimer);
+            
+            let uc = this.undoState.movedCoin;
+            uc.state = this.undoState.movedCoinPrevState.state;
+            uc.stepsTaken = this.undoState.movedCoinPrevState.stepsTaken;
+            uc.trackPos = this.undoState.movedCoinPrevState.trackPos;
+            
+            this.undoState.capturedCoins.forEach(c => {
+                c.coin.state = c.prevState.state;
+                c.coin.stepsTaken = c.prevState.stepsTaken;
+                c.coin.trackPos = c.prevState.trackPos;
+            });
+            
+            this.diceResult = this.undoState.diceResult;
+            this.d1 = this.undoState.d1;
+            this.d2 = this.undoState.d2;
+            this.diceRolled = this.undoState.diceRolled;
+            this.extraRoll = this.undoState.extraRoll;
+            
+            this.undosLeft[this.currentPlayer]--;
+            this.undoState = null;
+            this.hasMoved = false; // Unlock coins so player can pick a different one
+            
+            this.checkValidMoves();
+            this.renderCoins();
+            this.renderDie('die1', this.d1);
+            this.renderDie('die2', this.d2);
+            this.updateUI();
+        }
+
+        checkWinCondition() {
+            let winners = [];
+            let activeCount = 0;
+            for(let i=0; i<4; i++) {
+                if(!this.isActive[i]) continue;
+                activeCount++;
+                if (this.hasWon[i]) {
+                    winners.push(i);
+                    continue;
+                }
+                let finishedCount = this.getPlayerCoins(i).filter(c => c.state === 'FINISHED').length;
+                if(finishedCount === 6) {
+                    this.hasWon[i] = true;
+                    winners.push(i);
+                }
+            }
+
+            let endGame = false;
+            // If 1 or 2 players are active, game ends when the first player wins.
+            // If 3 or 4 players are active, game ends when 1 player is left without winning.
+            if(activeCount > 1 && winners.length >= activeCount - 1) {
+                endGame = true;
+            }
+
+            if(endGame) {
+                this.gameOver = true;
+                let lastWinner = winners[winners.length - 1];
+                let winText = COLORS[lastWinner].charAt(0).toUpperCase() + COLORS[lastWinner].slice(1) + " Wins!";
+                document.getElementById('win-text').innerText = winText;
+                document.getElementById('win-text').style.color = `var(--${COLORS[lastWinner]})`;
+                document.getElementById('win-overlay').style.display = 'flex';
+            }
+        }
+
+        endTurn() {
+            if(this.gameOver) return;
+            if(this.passTimer) clearTimeout(this.passTimer);
+            if(this.endTurnTimer) clearTimeout(this.endTurnTimer);
+            if(this.autoRollTimer) clearTimeout(this.autoRollTimer);
+            this.currentPlayer = (this.currentPlayer + 1) % 4;
+            this.skipInactive(); // Automatically skips players who have won
+            this.diceRolled = false; this.extraRoll = false; this.mustPass = false;
+            this.diceResult = 0; this.d1 = -1; this.d2 = -1;
+            this.undoState = null;
+            this.hasMoved = false; // Reset lock for next player
+            this.renderDie('die1', -1); this.renderDie('die2', -1);
+            this.updateUI();
+            this.playAI();
+        }
+
+        playAI() {
+            if(this.isHuman[this.currentPlayer] || !this.isActive[this.currentPlayer] || this.hasWon[this.currentPlayer] || this.gameOver || this.isAnimating) return;
+            if(!this.diceRolled && !this.isRolling && !this.mustPass) {
+                this.startRoll();
+            } else if(this.diceRolled && !this.isRolling && !this.mustPass) {
+                let validCoins = this.getValidCoins();
+                if(validCoins.length > 0) {
+                    let coinToMove = validCoins[Math.floor(Math.random()*validCoins.length)];
+                    this.moveCoin(coinToMove);
+                } else {
+                    this.mustPass = true; this.passTimer = setTimeout(() => this.endTurn(), 1500);
+                }
+            }
+        }
+
+        renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            for(let r=0; r<15; r++) {
+                for(let c=0; c<15; c++) {
+                    let cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.style.gridRow = r + 1; cell.style.gridColumn = c + 1;
+                    let isPath = MAIN_TRACK.some(p => p[0]===c && p[1]===r);
+                    if(isPath) cell.classList.add('cell-path');
+                    
+                    if(SAFE_ZONE_MAP[[c,r]] !== undefined) {
+                        let pid = SAFE_ZONE_MAP[[c,r]];
+                        cell.classList.add('cell-safe');
+                        cell.style.backgroundColor = BRIGHT_COLORS[pid]; // Bright colors for safe zones
+                        cell.innerText = "✖"; cell.style.color = "#111"; // Dark text for contrast
+                    }
+                    
+                    for(let i=0; i<4; i++) {
+                        if(HOME_STRETCHES[i].some(h => h[0]===c && h[1]===r)) {
+                            cell.classList.add('cell-home-stretch');
+                            cell.style.backgroundColor = BRIGHT_COLORS[i]; // Bright colors for home stretches
+                        }
+                    }
+                    
+                    board.appendChild(cell);
+                }
+            }
+            
+            let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.setAttribute("width", "114");
+            svg.setAttribute("height", "114");
+            svg.setAttribute("viewBox", "0 0 114 114");
+            svg.style.position = "absolute";
+            svg.style.left = "228px"; 
+            svg.style.top = "228px";
+            svg.style.zIndex = "1";
+            svg.style.pointerEvents = "none";
+            
+            const tris = [
+                { points: "0,0 0,114 57,57", color: COLORS[0] }, // Red
+                { points: "0,0 114,0 57,57", color: COLORS[1] }, // Green
+                { points: "114,0 114,114 57,57", color: COLORS[2] }, // Yellow
+                { points: "0,114 114,114 57,57", color: COLORS[3] }  // Blue
+            ];
+            tris.forEach(t => {
+                let poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+                poly.setAttribute("points", t.points);
+                poly.setAttribute("fill", `var(--${t.color})`);
+                poly.setAttribute("opacity", "0.9");
+                poly.setAttribute("stroke", "#111"); // Dark stroke for the center triangles
+                poly.setAttribute("stroke-width", "2");
+                svg.appendChild(poly);
+            });
+            board.appendChild(svg);
+
+            for(let i=0; i<4; i++) {
+                let base = HOME_BASES[i];
+                let box = document.createElement('div');
+                box.className = 'cell cell-base';
+                box.id = `base-${i}`;
+                box.style.gridRow = `${base[1]+1} / span 6`;
+                box.style.gridColumn = `${base[0]+1} / span 6`;
+                board.appendChild(box);
+            }
+            this.renderCoins();
+        }
+
+        renderCoins() {
+            document.querySelectorAll('.coin').forEach(e => e.remove());
+            
+            for(let i=0; i<4; i++) {
+                if(!this.isActive[i]) continue;
+                let base = HOME_BASES[i];
+                let homeCoins = this.getPlayerCoins(i).filter(c => c.state === 'HOME');
+                let bx = base[0]*CELL_SIZE + 60; 
+                let by = base[1]*CELL_SIZE + 60;
+                homeCoins.forEach((c, idx) => {
+                    let row = Math.floor(idx/3), col = idx%3;
+                    this.createCoinElement(c, bx + col*30, by + row*30);
+                });
+            }
+
+            let trackOccupants = {};
+            this.players.filter(c => c.state === 'ACTIVE').forEach(c => {
+                if(!trackOccupants[c.trackPos]) trackOccupants[c.trackPos] = [];
+                trackOccupants[c.trackPos].push(c);
+            });
+            for(let pos in trackOccupants) {
+                let coords = MAIN_TRACK[pos];
+                let bx = coords[0]*CELL_SIZE + CELL_SIZE/2 - 13;
+                let by = coords[1]*CELL_SIZE + CELL_SIZE/2 - 13;
+                trackOccupants[pos].forEach((c, idx) => {
+                    this.createCoinElement(c, bx + idx*6, by - idx*6);
+                });
+            }
+
+            this.players.filter(c => c.state === 'STRETCH').forEach(c => {
+                let stretchIdx = c.stepsTaken - 52;
+                let coords = HOME_STRETCHES[c.pid][stretchIdx];
+                let bx = coords[0]*CELL_SIZE + CELL_SIZE/2 - 13;
+                let by = coords[1]*CELL_SIZE + CELL_SIZE/2 - 13;
+                this.createCoinElement(c, bx, by);
+            });
+
+            // New logic to center finished coins inside their respective triangles
+            for(let i=0; i<4; i++) {
+                let finishedCoins = this.getPlayerCoins(i).filter(c => c.state === 'FINISHED');
+                let center = FINISH_CENTERS[i];
+                
+                finishedCoins.forEach((c, idx) => {
+                    let x, y;
+                    if (center.cols === 2) { // Red, Yellow
+                        x = center.x + (idx % 2 === 0 ? -14 : 14) - 13;
+                        y = center.y + (Math.floor(idx / 2) - 1) * 28 - 13;
+                    } else { // Green, Blue
+                        x = center.x + (Math.floor(idx / 2) - 1) * 28 - 13;
+                        y = center.y + (idx % 2 === 0 ? -14 : 14) - 13;
+                    }
+                    this.createCoinElement(c, x, y);
+                });
+            }
+        }
+
+        createCoinElement(coin, x, y) {
+            let el = document.createElement('div');
+            el.className = `coin`; 
+            el.innerHTML = PAWN_SVG(COLORS[coin.pid]);
+            el.style.left = x + 'px'; el.style.top = y + 'px';
+            el.onclick = () => { 
+                if(this.isHuman[this.currentPlayer] && !this.isAnimating) this.moveCoin(coin); 
+            };
+            document.getElementById('board').appendChild(el);
+        }
+
+        renderDie(id, val) {
+            let die = document.getElementById(id);
+            die.innerHTML = '';
+            let dots = [];
+            if(val === 1) dots = [0,0,0,0,1,0,0,0,0];
+            else if(val === 2) dots = [0,0,1,0,0,0,1,0,0];
+            else if(val === 3) dots = [0,0,1,0,1,0,1,0,0];
+            else dots = [0,0,0,0,0,0,0,0,0];
+            dots.forEach(d => {
+                let dotEl = document.createElement('div');
+                dotEl.className = d === 1 ? 'dot' : 'dot-placeholder';
+                die.appendChild(dotEl);
+            });
+        }
+
+        updateUI() {
+            // Reset styles on all bases
+            document.querySelectorAll('.cell-base').forEach(b => {
+                b.classList.remove('base-active');
+                b.style.borderColor = '';
+            });
+            
+            // Add static active border to current player
+            let baseEl = document.getElementById(`base-${this.currentPlayer}`);
+            if(baseEl) {
+                baseEl.classList.add('base-active');
+                baseEl.style.borderColor = `var(--${COLORS[this.currentPlayer]})`;
+            }
+
+            let pColor = `var(--${COLORS[this.currentPlayer]})`;
+            let die1 = document.getElementById('die1');
+            let die2 = document.getElementById('die2');
+            
+            // Significantly enhanced glowing effect for the dice
+            if(die1) die1.style.boxShadow = `0 0 12px 4px ${pColor}, 0 0 30px 8px ${pColor}, inset 0 0 5px #ddd, 0 4px 8px rgba(0,0,0,0.6)`;
+            if(die2) die2.style.boxShadow = `0 0 12px 4px ${pColor}, 0 0 30px 8px ${pColor}, inset 0 0 5px #ddd, 0 4px 8px rgba(0,0,0,0.6)`;
+            
+            let undoBtn = document.getElementById('undo-btn');
+            let canUndo = this.isHuman[this.currentPlayer] && this.undosLeft[this.currentPlayer] > 0 && this.undoState != null && !this.isAnimating && !this.hasWon[this.currentPlayer];
+            undoBtn.disabled = !canUndo;
+            undoBtn.innerText = `Undo (${this.undosLeft[this.currentPlayer]})`;
+        }
+        
+        clearTimers() {
+            if(this.rollInterval) clearInterval(this.rollInterval);
+            if(this.passTimer) clearTimeout(this.passTimer);
+            if(this.endTurnTimer) clearTimeout(this.endTurnTimer);
+            if(this.autoRollTimer) clearTimeout(this.autoRollTimer);
+        }
+    }
+
+    function startGame(num) {
+        document.getElementById('menu-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+        game = new Game(num);
+        game.playAI();
+    }
+
+    function goToMenu() {
+        if(game) {
+            game.clearTimers();
+            game.gameOver = true; // Stop AI loops from firing
+        }
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('menu-screen').classList.add('active');
+        document.getElementById('win-overlay').style.display = 'none';
+    }
+
+    function handleDiceClick() {
+        if(game && game.isHuman[game.currentPlayer] && !game.isAnimating) game.startRoll();
+    }
+
+    function handleUndo() {
+        if(game) game.performUndo();
+    }
+</script>
+
+</body></html>
